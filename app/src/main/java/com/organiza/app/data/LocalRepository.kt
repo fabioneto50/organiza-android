@@ -19,8 +19,13 @@ class LocalRepository(context: Context) {
     fun deleteTask(id: String) = update(_data.value.copy(tasks = _data.value.tasks.filterNot { it.id == id }))
 
     fun addShift(shift: Shift) = update(_data.value.copy(shifts = _data.value.shifts + shift))
+    fun setShiftForDate(shift: Shift) = update(_data.value.copy(shifts = _data.value.shifts.filterNot { it.date == shift.date } + shift))
     fun addShifts(shifts: List<Shift>) = update(_data.value.copy(shifts = (_data.value.shifts + shifts).distinctBy { "${it.date}-${it.type}-${it.startTime}-${it.endTime}" }))
     fun deleteShift(id: String) = update(_data.value.copy(shifts = _data.value.shifts.filterNot { it.id == id }))
+    fun clearShiftsForDate(date: String) = update(_data.value.copy(shifts = _data.value.shifts.filterNot { it.date == date }))
+
+    fun addShiftTemplate(template: ShiftTemplate) = update(_data.value.copy(shiftTemplates = _data.value.shiftTemplates + template))
+    fun deleteShiftTemplate(id: String) = update(_data.value.copy(shiftTemplates = _data.value.shiftTemplates.filterNot { it.id == id && !it.system }))
 
     fun addAppointment(appointment: Appointment) = update(_data.value.copy(appointments = _data.value.appointments + appointment))
     fun mergeAppointments(appointments: List<Appointment>) {
@@ -70,7 +75,11 @@ class LocalRepository(context: Context) {
         }) } })
         put("shifts", JSONArray().apply { data.shifts.forEach { shift -> put(JSONObject().apply {
             put("id", shift.id); put("date", shift.date); put("type", shift.type.name); put("startTime", shift.startTime)
-            put("endTime", shift.endTime); put("note", shift.note)
+            put("endTime", shift.endTime); put("note", shift.note); put("templateId", shift.templateId ?: JSONObject.NULL)
+        }) } })
+        put("shiftTemplates", JSONArray().apply { data.shiftTemplates.forEach { t -> put(JSONObject().apply {
+            put("id", t.id); put("name", t.name); put("code", t.code); put("type", t.type.name)
+            put("startTime", t.startTime); put("endTime", t.endTime); put("colorHex", t.colorHex); put("system", t.system)
         }) } })
         put("appointments", JSONArray().apply { data.appointments.forEach { a -> put(JSONObject().apply {
             put("id", a.id); put("title", a.title); put("date", a.date); put("startTime", a.startTime); put("endTime", a.endTime)
@@ -116,8 +125,18 @@ class LocalRepository(context: Context) {
         val shifts = json.optJSONArray("shifts").toObjects { o -> Shift(
             id = o.optString("id", java.util.UUID.randomUUID().toString()), date = o.optString("date"),
             type = enumOr(ShiftType.OUTRO, o.optString("type")), startTime = o.optString("startTime", "09:00"),
-            endTime = o.optString("endTime", "17:00"), note = o.optString("note")
+            endTime = o.optString("endTime", "17:00"), note = o.optString("note"), templateId = o.nullableString("templateId")
         ) }
+        val templatesFromJson = json.optJSONArray("shiftTemplates").toObjects { o -> ShiftTemplate(
+            id = o.optString("id", java.util.UUID.randomUUID().toString()), name = o.optString("name", "Turno"),
+            code = o.optString("code", "T").take(10), type = enumOr(ShiftType.OUTRO, o.optString("type")),
+            startTime = o.optString("startTime", "09:00"), endTime = o.optString("endTime", "17:00"),
+            colorHex = o.optString("colorHex", "#5147FF"), system = o.optBoolean("system", false)
+        ) }
+        val shiftTemplates = if (templatesFromJson.isEmpty()) defaultShiftTemplates() else {
+            val systemIds = templatesFromJson.filter { it.system }.map { it.id }.toSet()
+            defaultShiftTemplates().filterNot { it.id in systemIds } + templatesFromJson
+        }
         val appointments = json.optJSONArray("appointments").toObjects { o -> Appointment(
             id = o.optString("id", java.util.UUID.randomUUID().toString()), title = o.optString("title", "Compromisso"),
             date = o.optString("date"), startTime = o.optString("startTime", "09:00"), endTime = o.optString("endTime", "10:00"),
@@ -158,7 +177,17 @@ class LocalRepository(context: Context) {
         val health = HealthSnapshot(
             lastSleepHours = h?.nullableDouble("lastSleepHours"), lastSleepEnd = h?.nullableString("lastSleepEnd"), lastSync = h?.nullableString("lastSync")
         )
-        return AppData(tasks, shifts, appointments, goals, habits, plan, preferences, health)
+        return AppData(
+            tasks = tasks,
+            shifts = shifts,
+            shiftTemplates = shiftTemplates,
+            appointments = appointments,
+            goals = goals,
+            habits = habits,
+            plan = plan,
+            preferences = preferences,
+            health = health
+        )
     }
 }
 
