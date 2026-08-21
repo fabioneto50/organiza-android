@@ -1,0 +1,92 @@
+--- a/app/src/main/java/com/organiza/app/domain/SaluQuoteEngine.kt
++++ b/app/src/main/java/com/organiza/app/domain/SaluQuoteEngine.kt
+@@ -0,0 +1,89 @@
++package com.organiza.app.domain
++
++import com.organiza.app.model.AppData
++import com.organiza.app.model.ShiftType
++import java.time.LocalDate
++import java.time.LocalTime
++import kotlin.math.absoluteValue
++
++object SaluQuoteEngine {
++    private val recoveryQuotes = listOf(
++        "O descanso também faz parte do caminho.",
++        "Hoje não precisas de provar nada. Cuida de ti.",
++        "Abranda sem culpa. Recuperar também é avançar.",
++        "Nem tudo precisa de ser resolvido hoje.",
++        "O corpo também tem agenda. Escuta-o.",
++        "Há dias em que descansar é a escolha mais inteligente.",
++        "Pára um pouco. A vida não foge enquanto recuperas.",
++        "Fazer menos hoje pode ser exatamente o que precisas."
++    )
++
++    private val spaciousDayQuotes = listOf(
++        "Tempo livre não é tempo perdido.",
++        "Não preenchas todos os espaços. Alguns são para respirar.",
++        "Hoje também pode ser um dia para simplesmente aproveitar.",
++        "A vida não acontece só entre tarefas.",
++        "Deixa algum espaço para o inesperado bom.",
++        "Nem sempre precisas de um plano para ter um bom dia.",
++        "Há coisas que podem esperar. A tua vida não.",
++        "Um dia leve também pode ser um dia completo."
++    )
++
++    private val balanceQuotes = listOf(
++        "Nem todos os dias precisam de ser produtivos. Alguns só precisam de ser vividos.",
++        "Não precisas de fazer tudo hoje.",
++        "Nem sempre precisas de mais tempo. Às vezes precisas de menos coisas.",
++        "Organizar também é decidir o que pode esperar.",
++        "O essencial cabe melhor quando deixas espaço à volta.",
++        "Fazer o que importa vale mais do que fazer tudo.",
++        "Um bom plano também sabe quando parar.",
++        "A tua agenda deve servir a tua vida, não o contrário.",
++        "Equilíbrio não é fazer tudo. É perceber o que faz sentido agora.",
++        "Hoje, escolhe presença antes de pressa.",
++        "Há dias para avançar e dias para respirar. Ambos contam.",
++        "O teu tempo merece intenção, mas também liberdade.",
++        "Não transformes cada minuto livre numa obrigação.",
++        "O que fica por fazer não apaga o que já viveste hoje.",
++        "A vida melhora quando também cabe nela aquilo que não estava planeado.",
++        "Cuida das tuas relações como cuidas dos teus compromissos.",
++        "Pequenos momentos também constroem uma vida boa.",
++        "Não tenhas tanta pressa de chegar que te esqueças de estar.",
++        "Crescer também é aprender a dizer não.",
++        "Às vezes, a melhor decisão é deixar espaço."
++    )
++
++    fun select(data: AppData, effectiveEnergy: Int, date: LocalDate): String {
++        val todayShifts = data.shifts.filter { it.date == date.toString() }
++        val recentStart = date.minusDays(6)
++        val recentWorkShifts = data.shifts.count {
++            val d = runCatching { it.localDate() }.getOrNull() ?: return@count false
++            d in recentStart..date && it.type !in listOf(ShiftType.FOLGA, ShiftType.FERIAS)
++        }
++        val todayPlanMinutes = data.plan.filter { it.date == date.toString() }.sumOf { block ->
++            runCatching {
++                val start = LocalTime.parse(block.startTime)
++                val end = LocalTime.parse(block.endTime)
++                var minutes = end.toSecondOfDay() / 60 - start.toSecondOfDay() / 60
++                if (minutes < 0) minutes += 24 * 60
++                minutes
++            }.getOrDefault(0)
++        }
++        val pendingTasks = data.tasks.count { !it.completed }
++        val hasRecoveryContext = effectiveEnergy <= 2 ||
++            data.shifts.any { it.type == ShiftType.NOITE && it.localDate() == date.minusDays(1) } ||
++            recentWorkShifts >= 5
++        val hasSpaciousDay = todayShifts.all { it.type in listOf(ShiftType.FOLGA, ShiftType.FERIAS) } &&
++            data.appointments.none { it.date == date.toString() } &&
++            todayPlanMinutes < 90
++        val overloaded = todayPlanMinutes >= 300 || pendingTasks >= 10
++
++        val pool = when {
++            hasRecoveryContext -> recoveryQuotes
++            hasSpaciousDay -> spaciousDayQuotes
++            overloaded -> balanceQuotes
++            else -> balanceQuotes
++        }
++        val index = (date.toEpochDay().absoluteValue % pool.size).toInt()
++        return pool[index]
++    }
++}
