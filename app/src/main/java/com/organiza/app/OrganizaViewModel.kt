@@ -62,6 +62,55 @@ class OrganizaViewModel(
         maybeReplan()
     }
 
+    fun applyShiftTemplate(date: LocalDate, templateId: String) {
+        val template = data.value.shiftTemplates.firstOrNull { it.id == templateId } ?: return
+        repository.setShiftForDate(
+            Shift(
+                date = date.toString(),
+                type = template.type,
+                startTime = template.startTime,
+                endTime = template.endTime,
+                note = template.name,
+                templateId = template.id
+            )
+        )
+        maybeReplan()
+    }
+
+    fun removeShiftsForDate(date: LocalDate) {
+        repository.clearShiftsForDate(date.toString())
+        maybeReplan()
+    }
+
+    fun createShiftTemplate(
+        name: String,
+        code: String,
+        type: ShiftType,
+        start: String,
+        end: String,
+        colorHex: String
+    ) {
+        if (name.isBlank() || code.isBlank()) return
+        repository.addShiftTemplate(
+            ShiftTemplate(
+                name = name.trim(),
+                code = code.trim().take(10),
+                type = type,
+                startTime = if (type in listOf(ShiftType.FOLGA, ShiftType.FERIAS)) "00:00" else start,
+                endTime = if (type in listOf(ShiftType.FOLGA, ShiftType.FERIAS)) "00:00" else end,
+                colorHex = colorHex,
+                system = false
+            )
+        )
+        _message.value = "Tipo de turno guardado."
+    }
+
+    fun deleteShiftTemplate(id: String) {
+        val template = data.value.shiftTemplates.firstOrNull { it.id == id } ?: return
+        if (template.system) return
+        repository.deleteShiftTemplate(id)
+    }
+
     fun deleteShift(id: String) { repository.deleteShift(id); maybeReplan() }
 
     fun importShiftPattern(startDate: LocalDate, pattern: String): Int {
@@ -71,12 +120,12 @@ class OrganizaViewModel(
         codes.forEach { code ->
             val date = startDate.plusDays(offset)
             val shift = when (code) {
-                "M", "D" -> Shift(date = date.toString(), type = ShiftType.DIA, startTime = "08:00", endTime = "16:00", note = "Importado: $code")
-                "T" -> Shift(date = date.toString(), type = ShiftType.TARDE, startTime = "16:00", endTime = "23:59", note = "Importado: T")
-                "N" -> Shift(date = date.toString(), type = ShiftType.NOITE, startTime = "20:00", endTime = "08:00", note = "Importado: N")
-                "L", "12" -> Shift(date = date.toString(), type = ShiftType.LONGO, startTime = "08:00", endTime = "20:00", note = "Importado: $code")
-                "F" -> Shift(date = date.toString(), type = ShiftType.FOLGA, startTime = "00:00", endTime = "00:00", note = "Importado: F")
-                "V" -> Shift(date = date.toString(), type = ShiftType.FERIAS, startTime = "00:00", endTime = "00:00", note = "Importado: V")
+                "M", "D" -> Shift(date = date.toString(), type = ShiftType.DIA, startTime = "08:00", endTime = "16:00", note = "Importado: $code", templateId = "builtin-morning")
+                "T" -> Shift(date = date.toString(), type = ShiftType.TARDE, startTime = "16:00", endTime = "23:59", note = "Importado: T", templateId = "builtin-afternoon")
+                "N" -> Shift(date = date.toString(), type = ShiftType.NOITE, startTime = "20:00", endTime = "08:00", note = "Importado: N", templateId = "builtin-night")
+                "L", "12" -> Shift(date = date.toString(), type = ShiftType.LONGO, startTime = "08:00", endTime = "20:00", note = "Importado: $code", templateId = "builtin-long")
+                "F" -> Shift(date = date.toString(), type = ShiftType.FOLGA, startTime = "00:00", endTime = "00:00", note = "Importado: F", templateId = "builtin-off")
+                "V" -> Shift(date = date.toString(), type = ShiftType.FERIAS, startTime = "00:00", endTime = "00:00", note = "Importado: V", templateId = "builtin-vacation")
                 else -> null
             }
             if (shift != null) { shifts += shift; offset++ }
