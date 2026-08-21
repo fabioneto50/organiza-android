@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.0 — Escala mensal e entrada dinâmica
+
+- Novo ecrã inicial dinâmico antes dos menus.
+- Calendário mensal completo para turnos, inspirado na leitura visual do MYDUTY.
+- Adição rápida de turno ao tocar num dia.
+- Tipos de turno personalizados com código, nome, horário, categoria e cor.
+- Tipos personalizados ficam guardados localmente e reutilizáveis.
+- Barra rápida para aplicar turnos ao dia selecionado.
+- Vista dos próximos 7 dias na página inicial.
+- Mantém integração com o motor de planeamento e recuperação pós-noite.
+
 ## 0.2.0 — 2026-08-21
 
 - Novo calendário/agenda integrada.
