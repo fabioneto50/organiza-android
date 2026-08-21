@@ -28,12 +28,17 @@ jobs:
             for f in .source-bundles/organiza-v0.4.b64.*; do
               size=$(wc -c < "$f")
               if [ "$size" -gt 10000 ]; then
-                head -c 10000 "$f" >> /tmp/organiza-v0.4.b64
+                head -c 10000 "$f" > /tmp/chunk
               else
-                cat "$f" >> /tmp/organiza-v0.4.b64
+                cat "$f" > /tmp/chunk
               fi
+              echo "$(basename "$f") $(wc -c < /tmp/chunk) $(sha256sum /tmp/chunk | cut -d' ' -f1)"
+              cat /tmp/chunk >> /tmp/organiza-v0.4.b64
             done
+            echo "B64_SHA256 $(sha256sum /tmp/organiza-v0.4.b64 | cut -d' ' -f1)"
+            test "$(sha256sum /tmp/organiza-v0.4.b64 | cut -d' ' -f1)" = "72e9c6ad2d173c85e4ca7b643190ae57a2b7d1ee4a23ce061d0625852a31e783"
             base64 --decode /tmp/organiza-v0.4.b64 > /tmp/organiza-v0.4.zip
+            test "$(sha256sum /tmp/organiza-v0.4.zip | cut -d' ' -f1)" = "026865fd67988cb0bacc7b6022e2473af4fa29e45532e5bc0be71d076a1a578b"
             unzip -t /tmp/organiza-v0.4.zip >/dev/null
             unzip -oq /tmp/organiza-v0.4.zip -d .
           elif [ -f "$BUNDLE" ]; then
