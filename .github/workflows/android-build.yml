@@ -26,6 +26,17 @@ jobs:
           tar -tJf /tmp/salu-flow-v05.tar.xz >/dev/null
           tar -xJf /tmp/salu-flow-v05.tar.xz -C .
 
+      - name: Apply SALU FLOW v0.6 daily quote patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/java/com/organiza/app/domain app/src/test/java/com/organiza/app/domain
+          touch app/src/main/java/com/organiza/app/domain/SaluQuoteEngine.kt
+          touch app/src/test/java/com/organiza/app/domain/SaluQuoteEngineTest.kt
+          for patch_file in .source-bundles/v06-01.diff .source-bundles/v06-02.diff .source-bundles/v06-03.diff .source-bundles/v06-04.diff .source-bundles/v06-05.diff; do
+            patch --batch --forward -p1 < "$patch_file"
+          done
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -52,7 +63,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SALU-FLOW-v0.5-debug
+          name: SALU-FLOW-v0.6-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30

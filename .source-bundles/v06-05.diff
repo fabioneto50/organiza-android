@@ -1,0 +1,107 @@
+--- a/app/src/main/java/com/organiza/app/ui/screens/HomeScreen.kt
++++ b/app/src/main/java/com/organiza/app/ui/screens/HomeScreen.kt
+@@ -52,6 +52,10 @@
+         }
+     }
+ 
++    LaunchedEffect(today) {
++        viewModel.ensureDailySaluQuote(today)
++    }
++
+     if (showTime) TimeAvailableDialog({ showTime = false }, viewModel::timeSuggestion)
+     if (showName) NameDialog(
+         initialName = data.preferences.userName,
+@@ -87,6 +91,7 @@
+     }
+     val mission = viewModel.dailyMission()
+     val proactive = viewModel.proactiveTip()
++    val dailyQuote = viewModel.dailySaluQuote(today)
+ 
+     Box(Modifier.fillMaxSize()) {
+         LazyColumn(
+@@ -102,15 +107,14 @@
+                         color = OrganizaInk
+                     )
+                     Text(fullDate(today), color = MaterialTheme.colorScheme.onSurfaceVariant)
+-                    if (data.preferences.userName.isBlank()) {
+-                        TextButton(onClick = { showName = true }, contentPadding = PaddingValues(0.dp)) {
+-                            Text("Adicionar o meu nome")
+-                        }
+-                    } else {
+-                        TextButton(onClick = { showName = true }, contentPadding = PaddingValues(0.dp)) {
+-                            Text("Alterar nome")
+-                        }
+-                    }
++                }
++            }
++
++            item { DailySaluQuoteCard(dailyQuote) }
++
++            item {
++                TextButton(onClick = { showName = true }, contentPadding = PaddingValues(0.dp)) {
++                    Text(if (data.preferences.userName.isBlank()) "Adicionar o meu nome" else "Alterar nome")
+                 }
+             }
+ 
+--- a/app/src/main/java/com/organiza/app/ui/OrganizaApp.kt
++++ b/app/src/main/java/com/organiza/app/ui/OrganizaApp.kt
+@@ -72,9 +72,12 @@
+                             selected = currentRoute == destination.route,
+                             onClick = {
+                                 navController.navigate(destination.route) {
+-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
++                                    popUpTo(navController.graph.findStartDestination().id) {
++                                        inclusive = true
++                                        saveState = false
++                                    }
+                                     launchSingleTop = true
+-                                    restoreState = true
++                                    restoreState = false
+                                 }
+                             },
+                             icon = { Icon(destination.icon, contentDescription = destination.label) },
+--- a/app/src/test/java/com/organiza/app/domain/SaluQuoteEngineTest.kt
++++ b/app/src/test/java/com/organiza/app/domain/SaluQuoteEngineTest.kt
+@@ -0,0 +1,42 @@
++package com.organiza.app.domain
++
++import com.organiza.app.model.AppData
++import com.organiza.app.model.Shift
++import com.organiza.app.model.ShiftType
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNotEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.time.LocalDate
++
++class SaluQuoteEngineTest {
++    @Test
++    fun sameDateProducesSameQuote() {
++        val date = LocalDate.of(2026, 8, 21)
++        val data = AppData()
++        val first = SaluQuoteEngine.select(data, effectiveEnergy = 3, date = date)
++        val second = SaluQuoteEngine.select(data, effectiveEnergy = 3, date = date)
++        assertEquals(first, second)
++    }
++
++    @Test
++    fun consecutiveDaysRotateQuoteOnSameContext() {
++        val data = AppData()
++        val first = SaluQuoteEngine.select(data, 3, LocalDate.of(2026, 8, 21))
++        val second = SaluQuoteEngine.select(data, 3, LocalDate.of(2026, 8, 22))
++        assertNotEquals(first, second)
++    }
++
++    @Test
++    fun lowEnergyUsesGentleMessage() {
++        val date = LocalDate.of(2026, 8, 21)
++        val data = AppData(
++            shifts = listOf(
++                Shift(date = date.minusDays(1).toString(), type = ShiftType.NOITE, startTime = "20:00", endTime = "08:00")
++            )
++        )
++        val quote = SaluQuoteEngine.select(data, effectiveEnergy = 1, date = date)
++        assertTrue(quote.isNotBlank())
++        assertTrue(quote.length < 120)
++    }
++}

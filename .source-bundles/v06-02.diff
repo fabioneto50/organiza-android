@@ -1,0 +1,37 @@
+--- a/app/src/main/java/com/organiza/app/OrganizaViewModel.kt
++++ b/app/src/main/java/com/organiza/app/OrganizaViewModel.kt
+@@ -12,6 +12,7 @@
+ import com.organiza.app.data.LocalRepository
+ import com.organiza.app.domain.PlannerEngine
+ import com.organiza.app.domain.LifeAssistantEngine
++import com.organiza.app.domain.SaluQuoteEngine
+ import com.organiza.app.integrations.CalendarIntegration
+ import com.organiza.app.integrations.HealthConnectManager
+ import com.organiza.app.export.ScheduleExporter
+@@ -357,6 +358,26 @@
+ 
+     fun proactiveTip(): String = LifeAssistantEngine.proactiveTip(data.value, effectiveEnergy = effectiveEnergy())
+ 
++    fun ensureDailySaluQuote(date: LocalDate = LocalDate.now()) {
++        val current = data.value
++        val prefs = current.preferences
++        if (prefs.dailySaluQuoteDate == date.toString() && prefs.dailySaluQuoteText.isNotBlank()) return
++        val quote = SaluQuoteEngine.select(current, effectiveEnergy(current), date)
++        repository.updatePreferences(
++            prefs.copy(dailySaluQuoteDate = date.toString(), dailySaluQuoteText = quote)
++        )
++    }
++
++    fun dailySaluQuote(date: LocalDate = LocalDate.now()): String {
++        val current = data.value
++        val prefs = current.preferences
++        return if (prefs.dailySaluQuoteDate == date.toString() && prefs.dailySaluQuoteText.isNotBlank()) {
++            prefs.dailySaluQuoteText
++        } else {
++            SaluQuoteEngine.select(current, effectiveEnergy(current), date)
++        }
++    }
++
+     fun freeWindows(days: Int = 7): List<FreeWindow> = LifeAssistantEngine.freeWindows(
+         data = data.value,
+         days = days.coerceIn(1, 30),

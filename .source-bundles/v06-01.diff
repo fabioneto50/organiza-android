@@ -1,0 +1,62 @@
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,4 +1,12 @@
+ # Changelog
++
++## v0.6.0
++
++- Home ganha **A frase da SALU**, com uma mensagem curta diária, persistente durante todo o dia e escolhida com sensibilidade ao contexto.
++- A frase surge imediatamente abaixo da data e usa a mascote de forma subtil.
++- A navegação inferior passa a abrir cada separador sempre no início, sem restaurar a posição de scroll anterior.
++- Mantida a identidade visual e todas as funcionalidades da v0.5.
++
+ 
+ ## 0.5.0 — SALU como assistente de vida
+ 
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,8 +11,8 @@
+         applicationId = "com.organiza.app"
+         minSdk = 26
+         targetSdk = 36
+-        versionCode = 5
+-        versionName = "0.5.0"
++        versionCode = 6
++        versionName = "0.6.0"
+ 
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+         vectorDrawables.useSupportLibrary = true
+--- a/app/src/main/java/com/organiza/app/model/Models.kt
++++ b/app/src/main/java/com/organiza/app/model/Models.kt
+@@ -193,7 +193,9 @@
+     val autoAdvanceShifts: Boolean = true,
+     val planningIntensity: PlanningIntensity = PlanningIntensity.EQUILIBRADO,
+     val planningHorizonDays: Int = 7,
+-    val proactiveSuggestions: Boolean = true
++    val proactiveSuggestions: Boolean = true,
++    val dailySaluQuoteDate: String = "",
++    val dailySaluQuoteText: String = ""
+ )
+ 
+ data class AppData(
+--- a/app/src/main/java/com/organiza/app/data/LocalRepository.kt
++++ b/app/src/main/java/com/organiza/app/data/LocalRepository.kt
+@@ -150,6 +150,7 @@
+             put("cardOpacity", p.cardOpacity.toDouble()); put("autoAdvanceShifts", p.autoAdvanceShifts)
+             put("planningIntensity", p.planningIntensity.name); put("planningHorizonDays", p.planningHorizonDays)
+             put("proactiveSuggestions", p.proactiveSuggestions)
++            put("dailySaluQuoteDate", p.dailySaluQuoteDate); put("dailySaluQuoteText", p.dailySaluQuoteText)
+         })
+         put("health", JSONObject().apply {
+             put("lastSleepHours", data.health.lastSleepHours ?: JSONObject.NULL)
+@@ -227,7 +228,9 @@
+             autoAdvanceShifts = p?.optBoolean("autoAdvanceShifts", true) ?: true,
+             planningIntensity = enumOr(PlanningIntensity.EQUILIBRADO, p?.optString("planningIntensity") ?: ""),
+             planningHorizonDays = (p?.optInt("planningHorizonDays", 7) ?: 7).coerceIn(1, 30),
+-            proactiveSuggestions = p?.optBoolean("proactiveSuggestions", true) ?: true
++            proactiveSuggestions = p?.optBoolean("proactiveSuggestions", true) ?: true,
++            dailySaluQuoteDate = p?.optString("dailySaluQuoteDate", "") ?: "",
++            dailySaluQuoteText = p?.optString("dailySaluQuoteText", "") ?: ""
+         )
+         val h = json.optJSONObject("health")
+         val health = HealthSnapshot(
