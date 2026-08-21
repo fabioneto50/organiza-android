@@ -17,31 +17,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Expand pending source bundle
+      - name: Expand pending source bundles
         shell: bash
         run: |
           set -euo pipefail
-          if compgen -G '.source-bundles/salu-flow-v0.5.b64.*' > /dev/null; then
-            echo 'Reconstructing SALU FLOW v0.5 source bundle'
-            cat .source-bundles/salu-flow-v0.5.b64.* > /tmp/salu-flow-v0.5.b64
-            echo "B64 $(wc -c < /tmp/salu-flow-v0.5.b64) bytes"
-            test "$(sha256sum /tmp/salu-flow-v0.5.b64 | cut -d' ' -f1)" = "a21aeec708e2085c3adb3e2fe2971d5ae428f37d78eb10235a8ed8d179df90da"
-            base64 --decode /tmp/salu-flow-v0.5.b64 > /tmp/salu-flow-v0.5.zip
-            test "$(sha256sum /tmp/salu-flow-v0.5.zip | cut -d' ' -f1)" = "5c2e3ae66fcd1d7caba3b4c546f9f3dfec528a700725c0203878b976bdeb4b78"
-            unzip -t /tmp/salu-flow-v0.5.zip >/dev/null
-            unzip -oq /tmp/salu-flow-v0.5.zip -d .
-          elif compgen -G '.source-bundles/organiza-v0.4.b64.*' > /dev/null; then
-            echo 'Reconstructing legacy SALU FLOW v0.4 bundle'
-            : > /tmp/organiza-v0.4.b64
-            for f in .source-bundles/organiza-v0.4.b64.*; do
-              size=$(wc -c < "$f")
-              if [ "$size" -gt 10000 ]; then head -c 10000 "$f" >> /tmp/organiza-v0.4.b64; else cat "$f" >> /tmp/organiza-v0.4.b64; fi
-            done
+
+          if compgen -G '.source-bundles/organiza-v0.4.b64.*' > /dev/null; then
+            echo 'Reconstructing validated SALU FLOW v0.4 base'
+            cat .source-bundles/organiza-v0.4.b64.* > /tmp/organiza-v0.4.b64
             base64 --decode /tmp/organiza-v0.4.b64 > /tmp/organiza-v0.4.zip
             unzip -t /tmp/organiza-v0.4.zip >/dev/null
             unzip -oq /tmp/organiza-v0.4.zip -d .
-          else
-            echo 'No pending source bundle'
+          fi
+
+          if compgen -G '.source-bundles/salu-flow-v0.5-overlay.b64.*' > /dev/null; then
+            echo 'Applying SALU FLOW v0.5 life-assistant overlay'
+            cat .source-bundles/salu-flow-v0.5-overlay.b64.* > /tmp/salu-flow-v0.5-overlay.b64
+            echo "Overlay B64: $(wc -c < /tmp/salu-flow-v0.5-overlay.b64) bytes"
+            test "$(sha256sum /tmp/salu-flow-v0.5-overlay.b64 | cut -d' ' -f1)" = "4eb53260a996eb151ec954bcf58bc7c9e3cf018b1602e0303d57cbb1d1a8f8ad"
+            base64 --decode /tmp/salu-flow-v0.5-overlay.b64 > /tmp/salu-flow-v0.5-overlay.zip
+            test "$(sha256sum /tmp/salu-flow-v0.5-overlay.zip | cut -d' ' -f1)" = "f4a513140e3b48dd9f41b682c3c7dd79a341594f75c51c3e7e2de90b81ff7f02"
+            unzip -t /tmp/salu-flow-v0.5-overlay.zip >/dev/null
+            unzip -oq /tmp/salu-flow-v0.5-overlay.zip -d .
           fi
 
       - name: Set up JDK 17
@@ -75,15 +72,15 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Materialize validated source bundle on main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('.source-bundles/salu-flow-v0.5.b64.*') != ''
+      - name: Materialize validated v0.5 source on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('.source-bundles/salu-flow-v0.5-overlay.b64.*') != ''
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- app CHANGELOG.md README.md .github/workflows/android-build.yml
-          git rm -f --ignore-unmatch .source-bundles/salu-flow-v0.5.b64.* .source-bundles/organiza-v0.4.zip .source-bundles/organiza-v0.4.b64.*
+          git add -- app CHANGELOG.md README.md docs .github/workflows/android-build.yml
+          git rm -f --ignore-unmatch .source-bundles/salu-flow-v0.5-overlay.b64.* .source-bundles/organiza-v0.4.zip .source-bundles/organiza-v0.4.b64.*
           if git diff --cached --quiet; then
             echo 'Nothing to materialize.'
           else
