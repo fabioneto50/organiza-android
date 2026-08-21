@@ -28,6 +28,29 @@ enum class ShiftType(val label: String) {
     FOLGA("Folga"), FERIAS("Férias"), OUTRO("Outro")
 }
 
+data class ShiftTemplate(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val code: String,
+    val type: ShiftType,
+    val startTime: String,
+    val endTime: String,
+    val colorHex: String,
+    val system: Boolean = false
+) {
+    fun start(): LocalTime = LocalTime.parse(startTime)
+    fun end(): LocalTime = LocalTime.parse(endTime)
+}
+
+fun defaultShiftTemplates(): List<ShiftTemplate> = listOf(
+    ShiftTemplate("builtin-morning", "Manhã", "M", ShiftType.DIA, "08:00", "16:00", "#5147FF", true),
+    ShiftTemplate("builtin-afternoon", "Tarde", "T", ShiftType.TARDE, "16:00", "23:59", "#7C3AED", true),
+    ShiftTemplate("builtin-night", "Noite", "N", ShiftType.NOITE, "20:00", "08:00", "#28004F", true),
+    ShiftTemplate("builtin-long", "12 horas", "12H", ShiftType.LONGO, "08:00", "20:00", "#6B6B6B", true),
+    ShiftTemplate("builtin-off", "Folga", "Folga", ShiftType.FOLGA, "00:00", "00:00", "#FF3434", true),
+    ShiftTemplate("builtin-vacation", "Férias", "Férias", ShiftType.FERIAS, "00:00", "00:00", "#E79BAA", true)
+)
+
 enum class AppointmentSource { MANUAL, DEVICE_CALENDAR }
 
 data class LifeTask(
@@ -51,7 +74,8 @@ data class Shift(
     val type: ShiftType,
     val startTime: String,
     val endTime: String,
-    val note: String = ""
+    val note: String = "",
+    val templateId: String? = null
 ) {
     fun localDate(): LocalDate = LocalDate.parse(date)
     fun start(): LocalTime = LocalTime.parse(startTime)
@@ -133,6 +157,7 @@ data class UserPreferences(
 data class AppData(
     val tasks: List<LifeTask> = emptyList(),
     val shifts: List<Shift> = emptyList(),
+    val shiftTemplates: List<ShiftTemplate> = defaultShiftTemplates(),
     val appointments: List<Appointment> = emptyList(),
     val goals: List<Goal> = emptyList(),
     val habits: List<Habit> = emptyList(),

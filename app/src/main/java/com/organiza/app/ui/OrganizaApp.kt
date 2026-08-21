@@ -40,25 +40,38 @@ fun OrganizaApp(viewModel: OrganizaViewModel) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
-                destinations.forEach { destination ->
-                    NavigationBarItem(
-                        selected = currentRoute == destination.route,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = { Text(destination.label) }
-                    )
+            if (currentRoute != "home") {
+                NavigationBar {
+                    destinations.forEach { destination ->
+                        NavigationBarItem(
+                            selected = currentRoute == destination.route,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(destination.icon, contentDescription = destination.label) },
+                            label = { Text(destination.label) }
+                        )
+                    }
                 }
             }
         }
     ) { padding ->
-        NavHost(navController = navController, startDestination = "today") {
+        NavHost(navController = navController, startDestination = "home") {
+            composable("home") {
+                HomeScreen(
+                    viewModel = viewModel,
+                    contentPadding = padding,
+                    openToday = { navController.navigate("today") },
+                    openShifts = { navController.navigate("shifts") },
+                    openCalendar = { navController.navigate("calendar") },
+                    openPlan = { navController.navigate("plan") },
+                    openTasks = { navController.navigate("tasks") }
+                )
+            }
             composable("today") {
                 DashboardScreen(
                     viewModel = viewModel, contentPadding = padding,
@@ -70,7 +83,13 @@ fun OrganizaApp(viewModel: OrganizaViewModel) {
             composable("calendar") { CalendarScreen(viewModel, padding) }
             composable("plan") { PlanScreen(viewModel, padding) }
             composable("tasks") { TasksScreen(viewModel, padding) }
-            composable("more") { MoreScreen(viewModel, padding, openShifts = { navController.navigate("shifts") }, openGoals = { navController.navigate("goals") }) }
+            composable("more") {
+                MoreScreen(
+                    viewModel, padding,
+                    openShifts = { navController.navigate("shifts") },
+                    openGoals = { navController.navigate("goals") }
+                )
+            }
             composable("shifts") { ShiftsScreen(viewModel, padding) }
             composable("goals") { GoalsScreen(viewModel, padding) }
         }
