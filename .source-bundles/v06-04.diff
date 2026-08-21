@@ -1,0 +1,48 @@
+--- a/app/src/main/java/com/organiza/app/ui/components/MascotComponents.kt
++++ b/app/src/main/java/com/organiza/app/ui/components/MascotComponents.kt
+@@ -45,6 +45,45 @@
+                 Text("SALU FLOW", style = MaterialTheme.typography.labelLarge, color = OrganizaInk)
+                 Text(text, style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium)
+             }
++        }
++    }
++}
++
++
++@Composable
++fun DailySaluQuoteCard(
++    quote: String,
++    modifier: Modifier = Modifier
++) {
++    Card(
++        modifier = modifier,
++        colors = CardDefaults.cardColors(
++            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = SALU_CARD_ALPHA)
++        )
++    ) {
++        Row(
++            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
++            verticalAlignment = Alignment.CenterVertically,
++            horizontalArrangement = Arrangement.spacedBy(10.dp)
++        ) {
++            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
++                Text(
++                    "A frase da SALU",
++                    style = MaterialTheme.typography.labelLarge,
++                    color = OrganizaInk
++                )
++                Text(
++                    "“$quote”",
++                    style = MaterialTheme.typography.bodyMedium,
++                    color = MaterialTheme.colorScheme.onSurface
++                )
++            }
++            Image(
++                painter = painterResource(R.drawable.salu_flow_mascot),
++                contentDescription = null,
++                modifier = Modifier.size(44.dp),
++                contentScale = ContentScale.Fit
++            )
+         }
+     }
+ }
