@@ -21,29 +21,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUNDLE=.source-bundles/organiza-v0.4.zip
-          if compgen -G '.source-bundles/organiza-v0.4.b64.*' > /dev/null; then
-            echo 'Reconstructing SALU FLOW v0.4 bundle from text chunks'
+          if compgen -G '.source-bundles/salu-flow-v0.5.b64.*' > /dev/null; then
+            echo 'Reconstructing SALU FLOW v0.5 source bundle'
+            cat .source-bundles/salu-flow-v0.5.b64.* > /tmp/salu-flow-v0.5.b64
+            echo "B64 $(wc -c < /tmp/salu-flow-v0.5.b64) bytes"
+            test "$(sha256sum /tmp/salu-flow-v0.5.b64 | cut -d' ' -f1)" = "a21aeec708e2085c3adb3e2fe2971d5ae428f37d78eb10235a8ed8d179df90da"
+            base64 --decode /tmp/salu-flow-v0.5.b64 > /tmp/salu-flow-v0.5.zip
+            test "$(sha256sum /tmp/salu-flow-v0.5.zip | cut -d' ' -f1)" = "5c2e3ae66fcd1d7caba3b4c546f9f3dfec528a700725c0203878b976bdeb4b78"
+            unzip -t /tmp/salu-flow-v0.5.zip >/dev/null
+            unzip -oq /tmp/salu-flow-v0.5.zip -d .
+          elif compgen -G '.source-bundles/organiza-v0.4.b64.*' > /dev/null; then
+            echo 'Reconstructing legacy SALU FLOW v0.4 bundle'
             : > /tmp/organiza-v0.4.b64
             for f in .source-bundles/organiza-v0.4.b64.*; do
               size=$(wc -c < "$f")
-              if [ "$size" -gt 10000 ]; then
-                head -c 10000 "$f" > /tmp/chunk
-              else
-                cat "$f" > /tmp/chunk
-              fi
-              echo "$(basename "$f") $(wc -c < /tmp/chunk) $(sha256sum /tmp/chunk | cut -d' ' -f1)"
-              cat /tmp/chunk >> /tmp/organiza-v0.4.b64
+              if [ "$size" -gt 10000 ]; then head -c 10000 "$f" >> /tmp/organiza-v0.4.b64; else cat "$f" >> /tmp/organiza-v0.4.b64; fi
             done
-            echo "B64_SHA256 $(sha256sum /tmp/organiza-v0.4.b64 | cut -d' ' -f1)"
-            test "$(sha256sum /tmp/organiza-v0.4.b64 | cut -d' ' -f1)" = "72e9c6ad2d173c85e4ca7b643190ae57a2b7d1ee4a23ce061d0625852a31e783"
             base64 --decode /tmp/organiza-v0.4.b64 > /tmp/organiza-v0.4.zip
-            test "$(sha256sum /tmp/organiza-v0.4.zip | cut -d' ' -f1)" = "026865fd67988cb0bacc7b6022e2473af4fa29e45532e5bc0be71d076a1a578b"
             unzip -t /tmp/organiza-v0.4.zip >/dev/null
             unzip -oq /tmp/organiza-v0.4.zip -d .
-          elif [ -f "$BUNDLE" ]; then
-            echo "Expanding $BUNDLE for validation"
-            unzip -oq "$BUNDLE" -d .
           else
             echo 'No pending source bundle'
           fi
@@ -74,23 +70,23 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SALU-FLOW-v0.4-debug
+          name: SALU-FLOW-v0.5-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Materialize validated source bundle on main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (hashFiles('.source-bundles/organiza-v0.4.zip') != '' || hashFiles('.source-bundles/organiza-v0.4.b64.*') != '')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('.source-bundles/salu-flow-v0.5.b64.*') != ''
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- app CHANGELOG.md README.md .github/workflows/android-build.yml
-          git rm -f --ignore-unmatch .source-bundles/organiza-v0.4.zip .source-bundles/organiza-v0.4.b64.*
+          git rm -f --ignore-unmatch .source-bundles/salu-flow-v0.5.b64.* .source-bundles/organiza-v0.4.zip .source-bundles/organiza-v0.4.b64.*
           if git diff --cached --quiet; then
             echo 'Nothing to materialize.'
           else
-            git commit -m 'Materialize SALU FLOW v0.4 validated source'
+            git commit -m 'Materialize SALU FLOW v0.5 validated source'
             git push origin HEAD:main
           fi
