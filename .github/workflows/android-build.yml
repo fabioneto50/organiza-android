@@ -17,6 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Apply SALU FLOW v0.5 final source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .source-bundles/v05-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v05.b64
+          base64 --decode /tmp/salu-flow-v05.b64 > /tmp/salu-flow-v05.tar.xz
+          tar -tJf /tmp/salu-flow-v05.tar.xz >/dev/null
+          tar -xJf /tmp/salu-flow-v05.tar.xz -C .
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
