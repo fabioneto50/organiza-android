@@ -32,9 +32,9 @@ jobs:
 
           if compgen -G '.source-bundles/salu-flow-v0.5-overlay.b64.*' > /dev/null; then
             echo 'Applying SALU FLOW v0.5 life-assistant overlay'
-            cat .source-bundles/salu-flow-v0.5-overlay.b64.* > /tmp/salu-flow-v0.5-overlay.raw
-            head -c 61600 /tmp/salu-flow-v0.5-overlay.raw > /tmp/salu-flow-v0.5-overlay.b64
+            cat .source-bundles/salu-flow-v0.5-overlay.b64.* | tr -d '\r\n' > /tmp/salu-flow-v0.5-overlay.b64
             echo "Overlay B64: $(wc -c < /tmp/salu-flow-v0.5-overlay.b64) bytes"
+            test "$(wc -c < /tmp/salu-flow-v0.5-overlay.b64)" -eq 61600
             test "$(sha256sum /tmp/salu-flow-v0.5-overlay.b64 | cut -d' ' -f1)" = "4eb53260a996eb151ec954bcf58bc7c9e3cf018b1602e0303d57cbb1d1a8f8ad"
             base64 --decode /tmp/salu-flow-v0.5-overlay.b64 > /tmp/salu-flow-v0.5-overlay.zip
             test "$(sha256sum /tmp/salu-flow-v0.5-overlay.zip | cut -d' ' -f1)" = "f4a513140e3b48dd9f41b682c3c7dd79a341594f75c51c3e7e2de90b81ff7f02"
