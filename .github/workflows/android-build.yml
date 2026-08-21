@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -16,35 +16,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Expand pending source bundles
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if compgen -G '.source-bundles/organiza-v0.4.b64.*' > /dev/null; then
-            echo 'Reconstructing validated SALU FLOW v0.4 base'
-            cat .source-bundles/organiza-v0.4.b64.* > /tmp/organiza-v0.4.b64
-            base64 --decode /tmp/organiza-v0.4.b64 > /tmp/organiza-v0.4.zip
-            unzip -t /tmp/organiza-v0.4.zip >/dev/null
-            unzip -oq /tmp/organiza-v0.4.zip -d .
-          fi
-
-          if compgen -G '.source-bundles/salu-flow-v0.5-overlay.b64.*' > /dev/null; then
-            echo 'Applying SALU FLOW v0.5 life-assistant overlay'
-            : > /tmp/salu-flow-v0.5-overlay.b64
-            head -c 20000 .source-bundles/salu-flow-v0.5-overlay.b64.00 >> /tmp/salu-flow-v0.5-overlay.b64
-            head -c 20000 .source-bundles/salu-flow-v0.5-overlay.b64.01 >> /tmp/salu-flow-v0.5-overlay.b64
-            head -c 20000 .source-bundles/salu-flow-v0.5-overlay.b64.02 >> /tmp/salu-flow-v0.5-overlay.b64
-            head -c 1600 .source-bundles/salu-flow-v0.5-overlay.b64.03 >> /tmp/salu-flow-v0.5-overlay.b64
-            echo "Overlay B64: $(wc -c < /tmp/salu-flow-v0.5-overlay.b64) bytes"
-            test "$(wc -c < /tmp/salu-flow-v0.5-overlay.b64)" -eq 61600
-            test "$(sha256sum /tmp/salu-flow-v0.5-overlay.b64 | cut -d' ' -f1)" = "4eb53260a996eb151ec954bcf58bc7c9e3cf018b1602e0303d57cbb1d1a8f8ad"
-            base64 --decode /tmp/salu-flow-v0.5-overlay.b64 > /tmp/salu-flow-v0.5-overlay.zip
-            test "$(sha256sum /tmp/salu-flow-v0.5-overlay.zip | cut -d' ' -f1)" = "f4a513140e3b48dd9f41b682c3c7dd79a341594f75c51c3e7e2de90b81ff7f02"
-            unzip -t /tmp/salu-flow-v0.5-overlay.zip >/dev/null
-            unzip -oq /tmp/salu-flow-v0.5-overlay.zip -d .
-          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -76,19 +47,3 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-
-      - name: Materialize validated v0.5 source on main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('.source-bundles/salu-flow-v0.5-overlay.b64.*') != ''
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- app CHANGELOG.md README.md docs .github/workflows/android-build.yml
-          git rm -f --ignore-unmatch .source-bundles/salu-flow-v0.5-overlay.b64.* .source-bundles/organiza-v0.4.zip .source-bundles/organiza-v0.4.b64.*
-          if git diff --cached --quiet; then
-            echo 'Nothing to materialize.'
-          else
-            git commit -m 'Materialize SALU FLOW v0.5 validated source'
-            git push origin HEAD:main
-          fi
