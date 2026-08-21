@@ -66,10 +66,10 @@ A app continua a funcionar sem Health Connect.
 
 ### Opção recomendada — Android Studio
 
-1. Descompactar o ZIP.
+1. Clonar ou descarregar o repositório `fabioneto50/organiza-android`.
 2. Abrir o Android Studio.
 3. Escolher **Open**.
-4. Selecionar a pasta `OrganizaAndroid` — a que contém `settings.gradle.kts`.
+4. Selecionar a raiz do repositório `organiza-android` — a pasta que contém `settings.gradle.kts`.
 5. Se o Android Studio pedir componentes de SDK, aceitar a instalação da API 36/Build Tools necessários.
 6. Em **Settings > Build, Execution, Deployment > Build Tools > Gradle**, usar o **Embedded JDK (17)**.
 7. Se o IDE pedir explicitamente uma distribuição Gradle, usar **Gradle 9.5.0**.
@@ -86,12 +86,16 @@ O ficheiro `prepare_gradle_wrapper_macos.command` descarrega temporariamente Gra
 No Terminal:
 
 ```bash
-cd /caminho/para/OrganizaAndroid
+cd /caminho/para/organiza-android
 chmod +x prepare_gradle_wrapper_macos.command
 ./prepare_gradle_wrapper_macos.command
 ```
 
 Depois abre o projeto no Android Studio.
+
+## GitHub Actions
+
+O workflow `.github/workflows/android-build.yml` testa e compila automaticamente a app. Em cada pull request para `main` executa os testes unitários e `assembleDebug`; após build bem-sucedido publica o artifact `Organiza-Android-v0.2-debug` com o APK.
 
 ## Instalar diretamente num telemóvel durante desenvolvimento
 
