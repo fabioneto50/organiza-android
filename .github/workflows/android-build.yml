@@ -33,27 +33,23 @@ jobs:
           mkdir -p app/src/main/java/com/organiza/app/domain app/src/test/java/com/organiza/app/domain
           touch app/src/main/java/com/organiza/app/domain/SaluQuoteEngine.kt
           touch app/src/test/java/com/organiza/app/domain/SaluQuoteEngineTest.kt
-          for patch_file in .source-bundles/v06-01.diff .source-bundles/v06-02.diff .source-bundles/v06-03.diff .source-bundles/v06-04.diff .source-bundles/v06-05.diff; do
-            patch --batch --forward -p1 < "$patch_file"
-          done
+          for patch_file in .source-bundles/v06-01.diff .source-bundles/v06-02.diff .source-bundles/v06-03.diff .source-bundles/v06-04.diff .source-bundles/v06-05.diff; do patch --batch --forward -p1 < "$patch_file"; done
 
       - name: Apply SALU FLOW v0.7 interface and PDF overlay
         shell: bash
         run: |
-          set -euo pipefail
-          cat .source-bundles/v07-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v07.b64
-          base64 --decode /tmp/salu-flow-v07.b64 > /tmp/salu-flow-v07.tar.xz
-          test "$(sha256sum /tmp/salu-flow-v07.tar.xz | awk '{print $1}')" = "d4f74a232c5e565d8972dc7fe34a3a257a94be9502ff4659d580700223799c51"
-          tar -xJf /tmp/salu-flow-v07.tar.xz -C .
+          cat .source-bundles/v07-final.part.* | tr -d '\r\n' > /tmp/v07.b64
+          base64 --decode /tmp/v07.b64 > /tmp/v07.tar.xz
+          test "$(sha256sum /tmp/v07.tar.xz | awk '{print $1}')" = "d4f74a232c5e565d8972dc7fe34a3a257a94be9502ff4659d580700223799c51"
+          tar -xJf /tmp/v07.tar.xz -C .
 
       - name: Apply SALU FLOW v0.8 shared calendar overlay
         shell: bash
         run: |
-          set -euo pipefail
-          cat .source-bundles/v08-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v08.b64
-          base64 --decode /tmp/salu-flow-v08.b64 > /tmp/salu-flow-v08.tar.xz
-          test "$(sha256sum /tmp/salu-flow-v08.tar.xz | awk '{print $1}')" = "80ec8e1098caa69827c99726a71fd44f479ba3eaef1484afc93b534af10b0f2c"
-          tar -xJf /tmp/salu-flow-v08.tar.xz -C .
+          cat .source-bundles/v08-final.part.* | tr -d '\r\n' > /tmp/v08.b64
+          base64 --decode /tmp/v08.b64 > /tmp/v08.tar.xz
+          test "$(sha256sum /tmp/v08.tar.xz | awk '{print $1}')" = "80ec8e1098caa69827c99726a71fd44f479ba3eaef1484afc93b534af10b0f2c"
+          tar -xJf /tmp/v08.tar.xz -C .
 
       - name: Apply SALU FLOW v0.9 palette refinement
         run: patch --batch --forward -p1 < .source-bundles/v09-palette.diff
@@ -61,22 +57,21 @@ jobs:
       - name: Apply SALU FLOW v0.10 life calendar and mascot refinement
         shell: bash
         run: |
+          cat .source-bundles/v010-diff.part.* | tr -d '\r\n' > /tmp/v010.b64
+          base64 --decode /tmp/v010.b64 > /tmp/v010.diff.xz
+          test "$(sha256sum /tmp/v010.diff.xz | awk '{print $1}')" = "42e004423e4804bd6cd8848e6efc73cbb3fc7e06249ee65c8b6e0825600d71a7"
+          xz -dc /tmp/v010.diff.xz > /tmp/v010.diff
+          patch --batch --forward -p2 < /tmp/v010.diff
+
+      - name: Apply SALU FLOW v0.11 real share-link overlay
+        shell: bash
+        run: |
           set -euo pipefail
-          cat .source-bundles/v010-diff.part.* | tr -d '\r\n' > /tmp/salu-flow-v010.b64
-          base64 --decode /tmp/salu-flow-v010.b64 > /tmp/salu-flow-v010.diff.xz
-          test "$(sha256sum /tmp/salu-flow-v010.diff.xz | awk '{print $1}')" = "42e004423e4804bd6cd8848e6efc73cbb3fc7e06249ee65c8b6e0825600d71a7"
-          xz -dc /tmp/salu-flow-v010.diff.xz > /tmp/salu-flow-v010.diff
-          patch --batch --forward -p2 < /tmp/salu-flow-v010.diff
-
-      - name: Package materialized v0.10 source
-        run: zip -qr /tmp/SALU-FLOW-v0.10-materialized-source.zip app build.gradle.kts settings.gradle.kts gradle.properties CHANGELOG.md README.md
-
-      - name: Upload materialized source
-        uses: actions/upload-artifact@v4
-        with:
-          name: SALU-FLOW-v0.10-materialized-source
-          path: /tmp/SALU-FLOW-v0.10-materialized-source.zip
-          retention-days: 1
+          cat .source-bundles/v011-link.part.* | tr -d '\r\n' > /tmp/v011.b64
+          base64 --decode /tmp/v011.b64 > /tmp/v011.tar.xz
+          test "$(sha256sum /tmp/v011.tar.xz | awk '{print $1}')" = "3533e2a9833e67a1ebb0580ac3896610632998f083e2db40e6d71c034730e2a7"
+          tar -tJf /tmp/v011.tar.xz >/dev/null
+          tar -xJf /tmp/v011.tar.xz -C .
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -104,6 +99,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SALU-FLOW-v0.10-debug
+          name: SALU-FLOW-v0.11-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 30
