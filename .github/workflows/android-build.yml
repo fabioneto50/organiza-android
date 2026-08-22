@@ -2,7 +2,7 @@ name: Build SALU FLOW Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/v0.11-real-share-links]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -44,7 +44,6 @@ jobs:
           cat .source-bundles/v07-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v07.b64
           base64 --decode /tmp/salu-flow-v07.b64 > /tmp/salu-flow-v07.tar.xz
           test "$(sha256sum /tmp/salu-flow-v07.tar.xz | awk '{print $1}')" = "d4f74a232c5e565d8972dc7fe34a3a257a94be9502ff4659d580700223799c51"
-          tar -tJf /tmp/salu-flow-v07.tar.xz >/dev/null
           tar -xJf /tmp/salu-flow-v07.tar.xz -C .
 
       - name: Apply SALU FLOW v0.8 shared calendar overlay
@@ -54,14 +53,10 @@ jobs:
           cat .source-bundles/v08-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v08.b64
           base64 --decode /tmp/salu-flow-v08.b64 > /tmp/salu-flow-v08.tar.xz
           test "$(sha256sum /tmp/salu-flow-v08.tar.xz | awk '{print $1}')" = "80ec8e1098caa69827c99726a71fd44f479ba3eaef1484afc93b534af10b0f2c"
-          tar -tJf /tmp/salu-flow-v08.tar.xz >/dev/null
           tar -xJf /tmp/salu-flow-v08.tar.xz -C .
 
       - name: Apply SALU FLOW v0.9 palette refinement
-        shell: bash
-        run: |
-          set -euo pipefail
-          patch --batch --forward -p1 < .source-bundles/v09-palette.diff
+        run: patch --batch --forward -p1 < .source-bundles/v09-palette.diff
 
       - name: Apply SALU FLOW v0.10 life calendar and mascot refinement
         shell: bash
@@ -72,6 +67,16 @@ jobs:
           test "$(sha256sum /tmp/salu-flow-v010.diff.xz | awk '{print $1}')" = "42e004423e4804bd6cd8848e6efc73cbb3fc7e06249ee65c8b6e0825600d71a7"
           xz -dc /tmp/salu-flow-v010.diff.xz > /tmp/salu-flow-v010.diff
           patch --batch --forward -p2 < /tmp/salu-flow-v010.diff
+
+      - name: Package materialized v0.10 source
+        run: zip -qr /tmp/SALU-FLOW-v0.10-materialized-source.zip app build.gradle.kts settings.gradle.kts gradle.properties CHANGELOG.md README.md
+
+      - name: Upload materialized source
+        uses: actions/upload-artifact@v4
+        with:
+          name: SALU-FLOW-v0.10-materialized-source
+          path: /tmp/SALU-FLOW-v0.10-materialized-source.zip
+          retention-days: 1
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -101,5 +106,4 @@ jobs:
         with:
           name: SALU-FLOW-v0.10-debug
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
           retention-days: 30
