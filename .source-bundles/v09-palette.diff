@@ -1,0 +1,147 @@
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,8 +11,8 @@
+         applicationId = "com.organiza.app"
+         minSdk = 26
+         targetSdk = 36
+-        versionCode = 8
+-        versionName = "0.8.0"
++        versionCode = 9
++        versionName = "0.9.0"
+ 
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+         vectorDrawables.useSupportLibrary = true
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,16 @@
+ # Changelog
+ 
++## v0.9.0
++
++- Mantido integralmente o fundo atual da SALU FLOW, incluindo riscas e cores de base.
++- Cartões passam a usar marfim translúcido com opacidade ligeiramente superior para melhorar a leitura sem esconder o padrão.
++- Texto principal refinado para carvão escuro, evitando preto absoluto.
++- Texto secundário passa a usar cinzento quente com hierarquia mais suave.
++- Terracota/bordô de destaque foi suavizado e uniformizado em títulos, ações, links, seleção e ícones principais.
++- Containers complementares e estados semânticos foram harmonizados com a paleta existente.
++- Barra inferior recebe camada translúcida mais legível e estados selecionado/neutro consistentes.
++- Mantidas tipografia, formas, espaçamentos, mascote e identidade do fundo das versões anteriores.
++
+ ## v0.8.0
+ 
+ - Agenda ganha **Calendário Partilhado**, sem criar um novo separador.
+--- a/app/src/main/java/com/organiza/app/ui/theme/Theme.kt
++++ b/app/src/main/java/com/organiza/app/ui/theme/Theme.kt
+@@ -9,30 +9,54 @@
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.unit.dp
+ 
+-val OrganizaInk = Color(0xFF8B3323)
+-val OrganizaBlue = Color(0xFF728FA8)
++// O fundo e as riscas mantêm a identidade cromática original da SALU FLOW.
+ val OrganizaCream = Color(0xFFF4E9D3)
++val OrganizaBlue = Color(0xFF728FA8)
++
++// Paleta de interface refinada para trabalhar sobre o fundo existente.
++val OrganizaInk = Color(0xFF8A4A3E)
++val OrganizaCharcoal = Color(0xFF2C2927)
++val OrganizaWarmGray = Color(0xFF6B625D)
++val OrganizaIvory = Color(0xFFFFF9F0)
+ 
+ private val LightColors = lightColorScheme(
+     primary = OrganizaInk,
+-    onPrimary = Color.White,
+-    primaryContainer = Color(0xFFF1DCD2),
+-    onPrimaryContainer = Color(0xFF4D180F),
+-    secondary = Color(0xFF577985),
+-    secondaryContainer = Color(0xFFD7E4E7),
+-    surface = Color(0xFFFFFBF5),
+-    surfaceVariant = Color(0xFFEDE2D0),
++    onPrimary = Color(0xFFFFFBF6),
++    primaryContainer = Color(0xFFF2DDD7),
++    onPrimaryContainer = Color(0xFF4C2721),
++    secondary = Color(0xFF627C87),
++    onSecondary = Color(0xFFFFFBF6),
++    secondaryContainer = Color(0xFFE2E8E7),
++    onSecondaryContainer = Color(0xFF34464D),
++    tertiary = Color(0xFF846F5D),
++    onTertiary = Color(0xFFFFFBF6),
++    tertiaryContainer = Color(0xFFEFE4D8),
++    onTertiaryContainer = Color(0xFF49392D),
++    surface = OrganizaIvory,
++    surfaceVariant = Color(0xFFEDE7DF),
+     background = OrganizaCream,
+-    onSurface = Color(0xFF2F2926),
+-    onSurfaceVariant = Color(0xFF625751),
+-    error = Color(0xFFB3261E)
++    onBackground = OrganizaCharcoal,
++    onSurface = OrganizaCharcoal,
++    onSurfaceVariant = OrganizaWarmGray,
++    outline = Color(0xFF95877E),
++    outlineVariant = Color(0xFFD5C9BF),
++    error = Color(0xFFA64A42),
++    onError = Color(0xFFFFFBF6),
++    errorContainer = Color(0xFFF4DEDB),
++    onErrorContainer = Color(0xFF562521),
++    inverseSurface = Color(0xFF383330),
++    inverseOnSurface = Color(0xFFFFF4EA),
++    inversePrimary = Color(0xFFE4A99D)
+ )
+ 
+ private val DarkColors = darkColorScheme(
+-    primary = Color(0xFFE9A999),
+-    secondary = Color(0xFFB4CBD1),
+-    surface = Color(0xFF2B2624),
+-    background = Color(0xFF211D1B)
++    primary = Color(0xFFE4A99D),
++    onPrimary = Color(0xFF54271F),
++    secondary = Color(0xFFB7CBD0),
++    surface = Color(0xFF2B2725),
++    background = Color(0xFF211E1C),
++    onSurface = Color(0xFFF2EDE8),
++    onSurfaceVariant = Color(0xFFD0C5BE)
+ )
+ 
+ private val SaluShapes = Shapes(
+--- a/app/src/main/java/com/organiza/app/ui/components/Common.kt
++++ b/app/src/main/java/com/organiza/app/ui/components/Common.kt
+@@ -16,8 +16,8 @@
+ import java.time.format.DateTimeFormatter
+ import java.util.Locale
+ 
+-const val SALU_CARD_ALPHA = 0.68f
+-const val SALU_HEADER_ALPHA = 0.84f
++const val SALU_CARD_ALPHA = 0.76f
++const val SALU_HEADER_ALPHA = 0.88f
+ 
+ @Composable
+ fun PageHeaderCard(
+--- a/app/src/main/java/com/organiza/app/ui/OrganizaApp.kt
++++ b/app/src/main/java/com/organiza/app/ui/OrganizaApp.kt
+@@ -66,7 +66,9 @@
+             containerColor = Color.Transparent,
+             snackbarHost = { SnackbarHost(snackbarHostState) },
+             bottomBar = {
+-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)) {
++                NavigationBar(
++                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f)
++                ) {
+                     destinations.forEach { destination ->
+                         NavigationBarItem(
+                             selected = currentRoute == destination.route,
+@@ -81,7 +83,14 @@
+                                 }
+                             },
+                             icon = { Icon(destination.icon, contentDescription = destination.label) },
+-                            label = { Text(destination.label) }
++                            label = { Text(destination.label) },
++                            colors = NavigationBarItemDefaults.colors(
++                                selectedIconColor = MaterialTheme.colorScheme.primary,
++                                selectedTextColor = MaterialTheme.colorScheme.primary,
++                                indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.82f),
++                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
++                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
++                            )
+                         )
+                     }
+                 }
