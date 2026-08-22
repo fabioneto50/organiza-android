@@ -63,6 +63,20 @@ jobs:
           set -euo pipefail
           patch --batch --forward -p1 < .source-bundles/v09-palette.diff
 
+      - name: Package materialized v0.9 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          zip -qr /tmp/SALU-FLOW-v0.9-materialized-source.zip app build.gradle.kts settings.gradle.kts gradle.properties CHANGELOG.md README.md
+
+      - name: Upload materialized v0.9 source
+        uses: actions/upload-artifact@v4
+        with:
+          name: SALU-FLOW-v0.9-materialized-source
+          path: /tmp/SALU-FLOW-v0.9-materialized-source.zip
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
