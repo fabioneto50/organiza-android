@@ -37,6 +37,16 @@ jobs:
             patch --batch --forward -p1 < "$patch_file"
           done
 
+      - name: Apply SALU FLOW v0.7 interface and PDF overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .source-bundles/v07-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v07.b64
+          base64 --decode /tmp/salu-flow-v07.b64 > /tmp/salu-flow-v07.tar.xz
+          test "$(sha256sum /tmp/salu-flow-v07.tar.xz | awk '{print $1}')" = "d4f74a232c5e565d8972dc7fe34a3a257a94be9502ff4659d580700223799c51"
+          tar -tJf /tmp/salu-flow-v07.tar.xz >/dev/null
+          tar -xJf /tmp/salu-flow-v07.tar.xz -C .
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -63,7 +73,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SALU-FLOW-v0.6-debug
+          name: SALU-FLOW-v0.7-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
