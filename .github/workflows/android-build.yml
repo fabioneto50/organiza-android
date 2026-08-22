@@ -47,6 +47,16 @@ jobs:
           tar -tJf /tmp/salu-flow-v07.tar.xz >/dev/null
           tar -xJf /tmp/salu-flow-v07.tar.xz -C .
 
+      - name: Apply SALU FLOW v0.8 shared calendar overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .source-bundles/v08-final.part.* | tr -d '\r\n' > /tmp/salu-flow-v08.b64
+          base64 --decode /tmp/salu-flow-v08.b64 > /tmp/salu-flow-v08.tar.xz
+          test "$(sha256sum /tmp/salu-flow-v08.tar.xz | awk '{print $1}')" = "80ec8e1098caa69827c99726a71fd44f479ba3eaef1484afc93b534af10b0f2c"
+          tar -tJf /tmp/salu-flow-v08.tar.xz >/dev/null
+          tar -xJf /tmp/salu-flow-v08.tar.xz -C .
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -73,7 +83,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SALU-FLOW-v0.7-debug
+          name: SALU-FLOW-v0.8-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
